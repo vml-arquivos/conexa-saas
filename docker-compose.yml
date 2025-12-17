@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # Banco de Dados
+  db:
+    image: postgres:15-alpine
+    container_name: conexa_db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: conexa_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - conexa-net
+
+  # Backend API
+  backend:
+    build: ./server
+    container_name: conexa_api
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: "postgresql://admin:password@db:5432/conexa_db?schema=public"
+      PORT: 3000
+    volumes:
+      - ./server/uploads:/app/uploads
+    depends_on:
+      - db
+    networks:
+      - conexa-net
+
+  # Frontend (Nginx)
+  frontend:
+    build: 
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: conexa_web
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - conexa-net
+
+volumes:
+  postgres_data:
+  uploads_data:
+
+networks:
+  conexa-net:
+    driver: bridge

@@ -1,0 +1,98 @@
+ROLE (SUA PERSONA): Você é o CTO e Engenheiro DevOps Sênior responsável pelo projeto CONEXA. Você está assumindo um repositório que contém um Frontend React (Vite) parcialmente construído (anteriormente chamado "AuraClass"). Sua missão é: Fazer o Rebranding, completar as telas faltantes, construir o Backend (API) e "Dockerizar" tudo para produção.
+
+CONTEXTO DO NEGÓCIO: O CONEXA é um SaaS de Gestão Escolar "All-in-One".
+
+Diferencial: Atende desde o Berçário (foco em fraldas, sono, alimentação) até o Ensino Superior (foco em notas, grade curricular).
+
+Segredo Técnico: O banco de dados usa campos JSON flexíveis para armazenar dados de saúde (bebês) ou dados acadêmicos (adultos) na mesma tabela de alunos.
+
+📋 ORDEM DE EXECUÇÃO (Siga estritamente esta sequência):
+FASE 1: REBRANDING TOTAL (AuraClass -> CONEXA)
+O nome do sistema mudou. Atualize a identidade visual:
+
+Código: Busque globalmente por "AuraClass" e substitua por "CONEXA" (nos Textos, Navbar, Login, Títulos).
+
+HTML: No arquivo index.html, altere a tag <title> para: CONEXA | Gestão Escolar Inteligente.
+
+Slogan: Onde couber (Login/Footer), insira: "Sua Conexão Pedagógica Inteligente".
+
+FASE 2: RECUPERAÇÃO DO FRONTEND (Criação de Arquivos Faltantes)
+O zip atual não tem as telas de demonstração. Você DEVE criar os seguintes arquivos em client/src:
+
+Crie client/src/data/mockData.ts (Dados vitais para a demo):
+
+TypeScript
+
+export const TURMAS = [
+  { id: 'b1', name: 'Berçário 1', type: 'Integral' },
+  { id: 'm1', name: 'Maternal 1', type: 'Integral' },
+];
+export const ESTOQUE = [
+  { id: 1, item: 'Fralda G', category: 'Higiene', qtd: 150, min: 50 },
+  { id: 2, item: 'Papel A4', category: 'Pedagógico', qtd: 5000, min: 1000 },
+  { id: 3, item: 'Leite s/ Lactose', category: 'Alimentação', qtd: 5, min: 10 }, // Crítico!
+];
+export const ALUNOS = [
+  { id: 1, name: 'Alice Siqueira', turma: 'Berçário 1', foto: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alice', saude: ['Intolerante à Lactose'], faltasConsecutivas: 2, faltasTotal: 5 },
+  { id: 2, name: 'Enzo Gabriel', turma: 'Maternal 2', foto: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Enzo', saude: [], faltasConsecutivas: 32, faltasTotal: 45 } // Risco de Evasão
+];
+Crie client/src/pages/dashboard/AlunosList.tsx:
+
+Renderize cards com os alunos acima.
+
+Lógica de Negócio Visual: Se faltasConsecutivas > 30, a borda do card deve ser VERMELHA e exibir badge "RISCO DE EVASÃO". Se tiver tags de saúde, exiba em destaque (Amarelo/Laranja).
+
+Crie client/src/pages/dashboard/EstoqueCompleto.tsx:
+
+Use Tabs para separar categorias (Higiene, Pedagógico, Alimentação).
+
+Se qtd < min, exiba um botão vermelho "Repor Estoque".
+
+Atualize client/src/App.tsx: Importe essas novas páginas e configure as rotas /dashboard/alunos, /dashboard/alunos/novo e /dashboard/estoque.
+
+FASE 3: BACKEND ENGINE (Node.js + Postgres)
+Crie a pasta /server e configure um servidor profissional:
+
+Stack: Express, TypeScript, Prisma ORM.
+
+Schema (prisma/schema.prisma):
+
+Use PostgreSQL como provider.
+
+Model School: (id, name, planType).
+
+Model Student: (id, name, classId, profileData Json, healthData Json). Nota: O campo JSON é obrigatório para flexibilidade.
+
+Model Inventory: (id, item, category, quantity, minThreshold).
+
+API Routes: Crie rotas básicas em server/routes para servir os dados que hoje estão no mockData.
+
+FASE 4: INFRAESTRUTURA DEPLOY (Docker & Docker Compose)
+Prepare o ambiente para produção. Crie na raiz:
+
+Dockerfile (Backend): Use Node 18 Alpine. Instale deps, gere o Prisma Client e rode o build.
+
+Dockerfile (Frontend): Multi-stage build.
+
+Stage 1: Build do Vite (npm run build).
+
+Stage 2: Nginx Alpine. Copie a pasta dist para o html do Nginx. Configure o nginx.conf para suportar SPA (fallback para index.html).
+
+docker-compose.yml:
+
+Service db: Imagem postgres:15-alpine (Defina user/pass/db no environment).
+
+Service backend: Build ./server. Conecte ao db. Porta 3000.
+
+Service frontend: Build ./client. Porta 80. Depende do backend.
+
+🚀 COMANDO FINAL
+Após criar todos os arquivos, execute:
+
+npm install (na raiz, cliente e servidor).
+
+Gere o Prisma Client.
+
+GIT: Adicione tudo, faça o Commit com a mensagem: "feat(release): sistema CONEXA v1.0 - Fullstack & Dockerized" e faça o Push.
+
+Comece a execução agora. Estou aguardando o sistema pronto.
