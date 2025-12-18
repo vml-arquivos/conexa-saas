@@ -19,7 +19,6 @@ import {
   Library,
   FileText,
   GraduationCap,
-  Code
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -34,14 +33,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { icon: ClipboardList, label: "Diário de Classe", href: "/dashboard/diario" },
     { icon: MessageSquare, label: "Atendimento Pais", href: "/dashboard/atendimento-pais" },
     { icon: ShoppingCart, label: "Pedidos Materiais", href: "/dashboard/pedidos" },
-    { icon: Library, label: "Biblioteca Sena", href: "/dashboard/biblioteca" },
+    { icon: Library, label: "Biblioteca da Sala", href: "/dashboard/biblioteca" },
     { icon: FileText, label: "Templates CEFR", href: "/dashboard/templates" },
     { icon: BookOpen, label: "Planejamentos", href: "/dashboard/planejamentos" },
     { icon: Users, label: "Alunos", href: "/dashboard/alunos" },
     { icon: CheckSquare, label: "Tarefas", href: "/dashboard/tarefas" },
     { icon: GraduationCap, label: "Turmas", href: "/dashboard/turmas" },
     { icon: Zap, label: "Automação (Demo)", href: "/dashboard/automacao" },
-    { icon: Code, label: "Visualização do Projeto", href: "/dashboard/visualizacao" },
     { icon: Settings, label: "Configurações", href: "/dashboard/configuracoes" },
   ];
 

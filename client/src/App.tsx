@@ -21,7 +21,7 @@ import AgendaDigital from "./pages/dashboard/AgendaDigital";
 import DiarioClasse from "./pages/dashboard/DiarioClasse";
 import AtendimentoPais from "./pages/dashboard/AtendimentoPais";
 import PedidosMateriais from "./pages/dashboard/PedidosMateriais";
-import BibliotecaSena from "./pages/dashboard/BibliotecaSena";
+import BibliotecaSala from "./pages/dashboard/BibliotecaSala";
 import TemplatesCEFR from "./pages/dashboard/TemplatesCEFR";
 import Turmas from "./pages/dashboard/Turmas";
 import Configuracoes from "./pages/dashboard/Configuracoes";
@@ -97,7 +97,7 @@ function Router() {
       </Route>
       <Route path="/dashboard/biblioteca">
         <DashboardLayout>
-          <BibliotecaSena />
+          <BibliotecaSala />
         </DashboardLayout>
       </Route>
       <Route path="/dashboard/templates">
