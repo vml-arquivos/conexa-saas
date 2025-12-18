@@ -16,6 +16,8 @@ import NovaTarefa from "./pages/dashboard/NovaTarefa";
 import CorrecaoTarefa from "./pages/dashboard/CorrecaoTarefa";
 import AlunosList from "./pages/dashboard/AlunosList";
 import AlunoNovo from "./pages/dashboard/AlunoNovo";
+import AlunoDetalhes from "./pages/dashboard/AlunoDetalhes";
+import AlunoEditar from "./pages/dashboard/AlunoEditar";
 import EstoqueCompleto from "./pages/dashboard/EstoqueCompleto";
 import AgendaDigital from "./pages/dashboard/AgendaDigital";
 import DiarioClasse from "./pages/dashboard/DiarioClasse";
@@ -65,6 +67,20 @@ function Router() {
         <DashboardLayout>
           <AlunoNovo />
         </DashboardLayout>
+      </Route>
+      <Route path="/dashboard/alunos/:id">
+        {(params) => (
+          <DashboardLayout>
+            <AlunoDetalhes />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/dashboard/alunos/:id/editar">
+        {(params) => (
+          <DashboardLayout>
+            <AlunoEditar />
+          </DashboardLayout>
+        )}
       </Route>
 
       {/* Estoque Routes */}

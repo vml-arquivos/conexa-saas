@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Heart, Baby, Milk, Moon } from "lucide-react";
+import { Plus, Search, Heart, Baby, Milk, Moon, Eye, Edit } from "lucide-react";
 import { Link } from "wouter";
 
 interface Student {
@@ -365,11 +365,20 @@ export default function AlunosList() {
                   </p>
                 </div>
 
-                <Link href={`/dashboard/alunos/${aluno.id}`}>
-                  <Button variant="outline" size="sm" className="w-full">
-                    Ver Detalhes
-                  </Button>
-                </Link>
+                <div className="flex gap-2">
+                  <Link href={`/dashboard/alunos/${aluno.id}`} className="flex-1">
+                    <Button variant="outline" size="sm" className="w-full">
+                      <Eye className="h-4 w-4 mr-2" />
+                      Visualizar
+                    </Button>
+                  </Link>
+                  <Link href={`/dashboard/alunos/${aluno.id}/editar`} className="flex-1">
+                    <Button variant="outline" size="sm" className="w-full">
+                      <Edit className="h-4 w-4 mr-2" />
+                      Editar
+                    </Button>
+                  </Link>
+                </div>
               </CardContent>
             </Card>
           );

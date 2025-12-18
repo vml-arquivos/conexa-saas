@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Upload, FileText, Download, Plus, Trash2, ShoppingCart, Palette, UtensilsCrossed, Sparkles, Droplets } from "lucide-react";
 import { toast } from "sonner";
+import * as XLSX from "xlsx";
 
 interface ItemFornecedor {
   codigo: string;
@@ -149,8 +150,133 @@ export default function PedidosMateriais() {
       toast.error("Adicione itens ao pedido primeiro");
       return;
     }
-    toast.success("Planilha Excel gerada com sucesso!");
-    // Aqui você implementaria a geração real da planilha
+
+    try {
+      // Agrupar itens por categoria
+      const itensPorCategoria: Record<string, ItemPedido[]> = {
+        pedagogico: [],
+        alimentacao: [],
+        higiene: [],
+        limpeza: []
+      };
+
+      itensPedido.forEach(item => {
+        if (itensPorCategoria[item.categoria]) {
+          itensPorCategoria[item.categoria].push(item);
+        }
+      });
+
+      // Criar workbook
+      const wb = XLSX.utils.book_new();
+
+      // Adicionar planilha para cada categoria que tem itens
+      Object.entries(itensPorCategoria).forEach(([categoria, itens]) => {
+        if (itens.length === 0) return;
+
+        const nomeCategoria = 
+          categoria === "pedagogico" ? "Pedagógico" :
+          categoria === "alimentacao" ? "Alimentação" :
+          categoria === "higiene" ? "Higiene Pessoal" : "Limpeza";
+
+        // Cabeçalho
+        const dados = [
+          ["CEPI ARARA CANINDÉ - PEDIDO DE MATERIAIS"],
+          [nomeCategoria],
+          [],
+          ["Item", "Código", "Produto", "Categoria", "Quantidade", "Unidade", "Preço Unit.", "Subtotal"],
+        ];
+
+        // Adicionar itens
+        itens.forEach((item, index) => {
+          dados.push([
+            index + 1,
+            item.codigo,
+            item.descricao,
+            nomeCategoria,
+            item.quantidade,
+            item.unidade,
+            `R$ ${item.preco.toFixed(2)}`,
+            `R$ ${item.subtotal.toFixed(2)}`
+          ]);
+        });
+
+        // Total da categoria
+        const totalCategoria = itens.reduce((sum, item) => sum + item.subtotal, 0);
+        dados.push([]);
+        dados.push(["TOTAL", "", "", "", "", "", "", `R$ ${totalCategoria.toFixed(2)}`]);
+
+        // Criar worksheet
+        const ws = XLSX.utils.aoa_to_sheet(dados);
+
+        // Definir larguras das colunas
+        ws['!cols'] = [
+          { wch: 6 },  // Item
+          { wch: 10 }, // Código
+          { wch: 40 }, // Produto
+          { wch: 15 }, // Categoria
+          { wch: 12 }, // Quantidade
+          { wch: 10 }, // Unidade
+          { wch: 12 }, // Preço Unit.
+          { wch: 12 }  // Subtotal
+        ];
+
+        // Adicionar ao workbook
+        XLSX.utils.book_append_sheet(wb, ws, nomeCategoria);
+      });
+
+      // Adicionar planilha resumo com todos os itens
+      const dadosResumo = [
+        ["CEPI ARARA CANINDÉ - PEDIDO DE MATERIAIS - RESUMO GERAL"],
+        [],
+        ["Item", "Código", "Produto", "Categoria", "Quantidade", "Unidade", "Preço Unit.", "Subtotal"],
+      ];
+
+      itensPedido.forEach((item, index) => {
+        const nomeCategoria = 
+          item.categoria === "pedagogico" ? "Pedagógico" :
+          item.categoria === "alimentacao" ? "Alimentação" :
+          item.categoria === "higiene" ? "Higiene Pessoal" : "Limpeza";
+
+        dadosResumo.push([
+          index + 1,
+          item.codigo,
+          item.descricao,
+          nomeCategoria,
+          item.quantidade,
+          item.unidade,
+          `R$ ${item.preco.toFixed(2)}`,
+          `R$ ${item.subtotal.toFixed(2)}`
+        ]);
+      });
+
+      const totalGeral = calcularTotal();
+      dadosResumo.push([]);
+      dadosResumo.push(["TOTAL GERAL", "", "", "", "", "", "", `R$ ${totalGeral.toFixed(2)}`]);
+
+      const wsResumo = XLSX.utils.aoa_to_sheet(dadosResumo);
+      wsResumo['!cols'] = [
+        { wch: 6 },  // Item
+        { wch: 10 }, // Código
+        { wch: 40 }, // Produto
+        { wch: 15 }, // Categoria
+        { wch: 12 }, // Quantidade
+        { wch: 10 }, // Unidade
+        { wch: 12 }, // Preço Unit.
+        { wch: 12 }  // Subtotal
+      ];
+
+      XLSX.utils.book_append_sheet(wb, wsResumo, "Resumo Geral");
+
+      // Gerar arquivo
+      const dataAtual = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
+      const nomeArquivo = `Pedido_Materiais_CEPI_${dataAtual}.xlsx`;
+      XLSX.writeFile(wb, nomeArquivo);
+
+      toast.success("Planilha Excel gerada com sucesso!");
+    } catch (error) {
+      console.error("Erro ao gerar planilha:", error);
+      toast.error("Erro ao gerar planilha Excel");
+    }
   };
 
   const calcularTotal = () => {
