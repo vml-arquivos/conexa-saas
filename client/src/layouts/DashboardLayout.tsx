@@ -25,7 +25,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const menuItems = [
     { icon: LayoutDashboard, label: "Visão Geral", href: "/dashboard" },
@@ -43,107 +43,147 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { icon: Settings, label: "Configurações", href: "/dashboard/configuracoes" },
   ];
 
+  const handleMenuItemClick = () => {
+    setIsMobileMenuOpen(false);
+  };
+
   return (
     <div className="min-h-screen bg-background flex">
-      {/* Overlay para mobile */}
-      {isSidebarOpen && (
+      {/* Overlay para mobile - só aparece quando menu está aberto */}
+      {isMobileMenuOpen && (
         <div 
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={() => setIsSidebarOpen(false)}
+          onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
-      
-      {/* Sidebar */}
-      <aside 
-        className={`
-          fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border transform transition-transform duration-300 ease-in-out
-          ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
-          lg:relative lg:translate-x-0
-        `}
-      >
-        <div className="h-20 flex items-center px-6 border-b border-border">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center mr-3">
-            <span className="text-primary-foreground font-bold font-display text-xl">A</span>
-          </div>
-          <span className="font-display font-bold text-xl tracking-tight text-foreground">CEPI Arara Canindé</span>
+
+      {/* Sidebar - Escondida em mobile, visível em desktop */}
+      <aside className={`
+        fixed lg:sticky top-0 left-0 h-screen
+        w-64 bg-card border-r border-border
+        flex flex-col
+        transition-transform duration-300 ease-in-out
+        z-50
+        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
+        {/* Header do Sidebar */}
+        <div className="p-4 border-b border-border flex items-center justify-between">
+          <Link href="/dashboard">
+            <a className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-bold">
+                A
+              </div>
+              <span className="font-bold text-lg">CEPI Arara Canindé</span>
+            </a>
+          </Link>
+          {/* Botão X para fechar menu em mobile */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden"
+            onClick={() => setIsMobileMenuOpen(false)}
+          >
+            <X className="h-5 w-5" />
+          </Button>
         </div>
 
-        <nav className="p-4 space-y-1 overflow-y-auto h-[calc(100vh-160px)]">
-          {menuItems.map((item) => {
-            const isActive = location === item.href;
-            return (
-              <Link key={item.href} href={item.href}>
-                <a className={`
-                  flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 text-sm
-                  ${isActive 
-                    ? "bg-primary/10 text-primary font-medium shadow-sm" 
-                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                  }
-                `}>
-                  <item.icon className={`w-4 h-4 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
-                  {item.label}
-                </a>
-              </Link>
-            );
-          })}
+        {/* Menu Items */}
+        <nav className="flex-1 overflow-y-auto p-4">
+          <ul className="space-y-1">
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = location === item.href;
+              
+              return (
+                <li key={item.href}>
+                  <Link href={item.href}>
+                    <a
+                      onClick={handleMenuItemClick}
+                      className={`
+                        flex items-center gap-3 px-3 py-2 rounded-lg
+                        transition-colors
+                        ${isActive 
+                          ? 'bg-primary text-primary-foreground' 
+                          : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+                        }
+                      `}
+                    >
+                      <Icon className="h-5 w-5" />
+                      <span>{item.label}</span>
+                    </a>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
         </nav>
 
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border bg-card">
+        {/* Footer do Sidebar */}
+        <div className="p-4 border-t border-border">
           <Link href="/">
-            <a className="flex items-center gap-3 px-4 py-3 text-destructive hover:bg-destructive/10 rounded-lg transition-colors">
-              <LogOut className="w-5 h-5" />
-              Sair
+            <a 
+              onClick={handleMenuItemClick}
+              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <LogOut className="h-5 w-5" />
+              <span>Sair</span>
             </a>
           </Link>
         </div>
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-h-screen">
         {/* Header */}
-        <header className="h-20 bg-background/80 backdrop-blur-md border-b border-border flex items-center justify-between px-6 sticky top-0 z-40">
-          <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="lg:hidden"
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            >
-              {isSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </Button>
-            <div className="hidden md:flex items-center gap-2 text-muted-foreground bg-secondary/50 px-3 py-1.5 rounded-md border border-border/50">
-              <Search className="w-4 h-4" />
-              <input 
-                type="text" 
-                placeholder="Buscar..." 
-                className="bg-transparent border-none outline-none text-sm w-48 placeholder:text-muted-foreground/70"
-              />
-            </div>
-          </div>
+        <header className="sticky top-0 z-30 bg-card border-b border-border">
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center gap-4">
+              {/* Botão Hambúrguer - só aparece em mobile */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="lg:hidden"
+                onClick={() => setIsMobileMenuOpen(true)}
+              >
+                <Menu className="h-6 w-6" />
+              </Button>
 
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="w-5 h-5 text-muted-foreground" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-destructive rounded-full" />
-            </Button>
-            <div className="flex items-center gap-3 pl-4 border-l border-border">
-              <div className="text-right hidden sm:block">
-                <p className="text-sm font-medium text-foreground">Ana Silva</p>
-                <p className="text-xs text-muted-foreground">Coordenadora</p>
+              {/* Search */}
+              <div className="relative hidden md:block">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Buscar..."
+                  className="pl-10 pr-4 py-2 bg-muted rounded-lg border-0 focus:outline-none focus:ring-2 focus:ring-primary w-64"
+                />
               </div>
-              <Avatar>
-                <AvatarImage src="https://github.com/shadcn.png" />
-                <AvatarFallback>AS</AvatarFallback>
-              </Avatar>
+            </div>
+
+            <div className="flex items-center gap-4">
+              {/* Notifications */}
+              <Button variant="ghost" size="icon" className="relative">
+                <Bell className="h-5 w-5" />
+                <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full"></span>
+              </Button>
+
+              {/* User Profile */}
+              <div className="flex items-center gap-3">
+                <div className="text-right hidden sm:block">
+                  <p className="text-sm font-medium">Ana Silva</p>
+                  <p className="text-xs text-muted-foreground">Coordenadora</p>
+                </div>
+                <Avatar>
+                  <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=Ana" />
+                  <AvatarFallback>AS</AvatarFallback>
+                </Avatar>
+              </div>
             </div>
           </div>
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-6 lg:p-8 overflow-auto bg-secondary/30">
-          <div className="max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {children}
-          </div>
+        <main className="flex-1 p-4 md:p-6 lg:p-8">
+          {children}
         </main>
       </div>
     </div>
