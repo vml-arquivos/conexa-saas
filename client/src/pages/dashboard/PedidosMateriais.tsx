@@ -185,59 +185,164 @@ export default function PedidosMateriais() {
     }
 
     const turmaNome = turmas.find(t => t.id === turmaSelecionada)?.nome || "Turma";
+    const dataAtual = new Date().toLocaleDateString('pt-BR');
+    const horaAtual = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     
-    // Preparar dados para a planilha
-    const dados = itensPedidoAtual.map((item, index) => ({
-      "Item": index + 1,
-      "Código": item.codigo,
-      "Produto": item.descricao,
-      "Categoria": item.categoria.charAt(0).toUpperCase() + item.categoria.slice(1),
-      "Quantidade": item.quantidade,
-      "Unidade": item.unidade,
-      "Preço Unit.": item.preco,
-      "Subtotal": item.subtotal
-    }));
-
-    // Calcular total
-    const total = itensPedidoAtual.reduce((acc, item) => acc + item.subtotal, 0);
-
-    // Adicionar linha de total
-    dados.push({
-      "Item": "",
-      "Código": "",
-      "Produto": "",
-      "Categoria": "",
-      "Quantidade": "",
-      "Unidade": "",
-      "Preço Unit.": "TOTAL:",
-      "Subtotal": total
-    } as any);
-
     // Criar workbook
     const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.json_to_sheet(dados);
+    
+    // Agrupar itens por categoria e fornecedor
+    const itensPorCategoriaFornecedor: Record<string, Record<string, ItemPedido[]>> = {};
+    
+    itensPedidoAtual.forEach(item => {
+      const categoria = item.categoria.charAt(0).toUpperCase() + item.categoria.slice(1);
+      const fornecedor = obterFornecedorPorCategoria(item.categoria);
+      
+      if (!itensPorCategoriaFornecedor[categoria]) {
+        itensPorCategoriaFornecedor[categoria] = {};
+      }
+      if (!itensPorCategoriaFornecedor[categoria][fornecedor]) {
+        itensPorCategoriaFornecedor[categoria][fornecedor] = [];
+      }
+      itensPorCategoriaFornecedor[categoria][fornecedor].push(item);
+    });
+
+    // Preparar dados para a planilha com cabeçalho profissional
+    const dados: any[] = [];
+    
+    // CABEÇALHO DA INSTITUIÇÃO
+    dados.push({ A: "CEPI ARARA CANINDÉ - CENTRO DE EDUCAÇÃO DA PRIMEIRA INFÂNCIA" });
+    dados.push({ A: "PEDIDO DE MATERIAIS" });
+    dados.push({});
+    
+    // INFORMAÇÕES DO PEDIDO
+    dados.push({ A: "INFORMAÇÕES DO PEDIDO" });
+    dados.push({ A: "Turma:", B: turmaNome });
+    dados.push({ A: "Data de Emissão:", B: dataAtual });
+    dados.push({ A: "Hora:", B: horaAtual });
+    dados.push({ A: "Responsável:", B: "Ana Silva - Coordenadora Pedagógica" });
+    dados.push({});
+    
+    let itemGlobal = 1;
+    let totalGeral = 0;
+
+    // ITENS POR CATEGORIA E FORNECEDOR
+    Object.entries(itensPorCategoriaFornecedor).forEach(([categoria, fornecedores], catIndex) => {
+      // Cabeçalho da Categoria
+      dados.push({ A: `CATEGORIA: ${categoria.toUpperCase()}` });
+      dados.push({});
+      
+      Object.entries(fornecedores).forEach(([fornecedor, itens]) => {
+        // Cabeçalho do Fornecedor
+        dados.push({ A: `Fornecedor: ${fornecedor}` });
+        dados.push({});
+        
+        // Cabeçalho da Tabela
+        dados.push({
+          A: "Item",
+          B: "Código",
+          C: "Descrição do Produto",
+          D: "Unidade",
+          E: "Quantidade",
+          F: "Valor Unitário (R$)",
+          G: "Valor Total (R$)"
+        });
+        
+        // Itens do fornecedor
+        let subtotalFornecedor = 0;
+        itens.forEach((item) => {
+          dados.push({
+            A: itemGlobal++,
+            B: item.codigo,
+            C: item.descricao,
+            D: item.unidade,
+            E: item.quantidade,
+            F: item.preco.toFixed(2),
+            G: item.subtotal.toFixed(2)
+          });
+          subtotalFornecedor += item.subtotal;
+          totalGeral += item.subtotal;
+        });
+        
+        // Subtotal do Fornecedor
+        dados.push({
+          A: "",
+          B: "",
+          C: "",
+          D: "",
+          E: "",
+          F: "Subtotal Fornecedor:",
+          G: subtotalFornecedor.toFixed(2)
+        });
+        dados.push({});
+      });
+      
+      dados.push({});
+    });
+
+    // RESUMO FINANCEIRO
+    dados.push({ A: "RESUMO FINANCEIRO" });
+    dados.push({});
+    dados.push({ A: "Descrição", B: "Valor (R$)" });
+    
+    Object.entries(itensPorCategoriaFornecedor).forEach(([categoria, fornecedores]) => {
+      const totalCategoria = Object.values(fornecedores)
+        .flat()
+        .reduce((acc, item) => acc + item.subtotal, 0);
+      dados.push({ A: `Total ${categoria}:`, B: totalCategoria.toFixed(2) });
+    });
+    
+    dados.push({});
+    dados.push({ A: "VALOR TOTAL DO PEDIDO:", B: totalGeral.toFixed(2) });
+    dados.push({});
+    
+    // OBSERVAÇÕES
+    dados.push({ A: "OBSERVAÇÕES" });
+    dados.push({ A: "• Prazo de entrega: Conforme acordado com o fornecedor" });
+    dados.push({ A: "• Forma de pagamento: A combinar" });
+    dados.push({ A: "• Local de entrega: CEPI Arara Canindé" });
+    dados.push({ A: "• Contato: (61) 3333-4444 | cepi.araracaninde@educacao.df.gov.br" });
+    dados.push({});
+    dados.push({ A: "_".repeat(50) });
+    dados.push({ A: "Assinatura do Responsável" });
+
+    // Criar worksheet
+    const ws = XLSX.utils.json_to_sheet(dados, { skipHeader: true });
 
     // Configurar larguras das colunas
     ws['!cols'] = [
-      { wch: 6 },  // Item
-      { wch: 10 }, // Código
-      { wch: 45 }, // Produto
-      { wch: 15 }, // Categoria
-      { wch: 12 }, // Quantidade
-      { wch: 12 }, // Unidade
-      { wch: 14 }, // Preço Unit.
-      { wch: 14 }  // Subtotal
+      { wch: 8 },   // A - Item
+      { wch: 12 },  // B - Código
+      { wch: 50 },  // C - Descrição
+      { wch: 12 },  // D - Unidade
+      { wch: 12 },  // E - Quantidade
+      { wch: 20 },  // F - Valor Unit.
+      { wch: 20 }   // G - Valor Total
     ];
 
-    XLSX.utils.book_append_sheet(wb, ws, "Pedido");
+    // Aplicar estilos (merge cells para títulos)
+    const merges = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 6 } }, // Título principal
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 6 } }  // Subtítulo
+    ];
+    ws['!merges'] = merges;
+
+    XLSX.utils.book_append_sheet(wb, ws, "Pedido de Materiais");
 
     // Gerar arquivo
-    const dataAtual = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
-    const nomeArquivo = `Pedido_Materiais_${turmaNome.replace(/\s/g, '_')}_${dataAtual}.xlsx`;
+    const nomeArquivo = `Pedido_${turmaNome.replace(/\s/g, '_')}_${dataAtual.replace(/\//g, '-')}.xlsx`;
     
     XLSX.writeFile(wb, nomeArquivo);
     
-    toast.success(`Planilha gerada: ${nomeArquivo}`);
+    toast.success(`Planilha profissional gerada: ${nomeArquivo}`);
+  };
+
+  const obterFornecedorPorCategoria = (categoria: string): string => {
+    const fornecedores = fornecedoresPorCategoria[categoria];
+    if (fornecedores) {
+      return Object.keys(fornecedores)[0] || "Fornecedor não especificado";
+    }
+    return "Fornecedor não especificado";
   };
 
   const totalPedido = itensPedidoAtual.reduce((acc, item) => acc + item.subtotal, 0);
