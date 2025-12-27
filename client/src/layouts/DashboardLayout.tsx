@@ -19,6 +19,7 @@ import {
   Library,
   FileText,
   GraduationCap,
+  ListChecks, // Novo ícone para Requisições
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -33,6 +34,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { icon: ClipboardList, label: "Diário de Classe", href: "/dashboard/diario" },
     { icon: MessageSquare, label: "Atendimento Pais", href: "/dashboard/atendimento-pais" },
     { icon: ShoppingCart, label: "Pedidos Materiais", href: "/dashboard/pedidos" },
+    { icon: ClipboardList, label: "Requisições", href: "/dashboard/requisicoes" },
     { icon: Library, label: "Biblioteca da Sala", href: "/dashboard/biblioteca" },
     { icon: FileText, label: "Templates CEFR", href: "/dashboard/templates" },
     { icon: BookOpen, label: "Planejamentos", href: "/dashboard/planejamentos" },

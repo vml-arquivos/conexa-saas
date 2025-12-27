@@ -7,6 +7,7 @@ import agentRoutes from '../routes/agent.js';
 import employeeRoutes from '../routes/employees.js';
 import documentRoutes from '../routes/documents.js';
 import procurementRoutes from '../routes/procurement.js';
+import requisitionRoutes from '../routes/requisitions.js';
 
 const app = express();
 const prisma = new PrismaClient();
@@ -34,6 +35,9 @@ app.use('/api/documents', documentRoutes);
 
 // Rotas de Compras
 app.use('/api/procurement', procurementRoutes);
+
+// Rotas de Requisições
+app.use('/api/requisitions', requisitionRoutes);
 
 // Rota de Alunos
 app.get('/api/students', async (req, res) => {
@@ -90,4 +94,5 @@ app.listen(PORT, () => {
   console.log(`📄 Documentos disponivel em /api/documents`);
   console.log(`👥 Funcionários disponivel em /api/employees`);
   console.log(`📦 Compras disponivel em /api/procurement`);
+  console.log(`📝 Requisições disponivel em /api/requisitions`);
 });
