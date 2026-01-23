@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+    <title>Teste Mobile - CEPI Arara Canindé</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; padding: 0; }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <!-- Overlay -->
+    <div id="overlay" class="fixed inset-0 bg-black/50 z-40 lg:hidden hidden"></div>
+    
+    <!-- Sidebar -->
+    <aside id="sidebar" class="
+        fixed lg:sticky top-0 left-0 h-screen
+        w-64 bg-white border-r border-gray-200
+        flex flex-col
+        transition-transform duration-300 ease-in-out
+        z-50
+        -translate-x-full lg:translate-x-0
+    ">
+        <div class="p-4 border-b border-gray-200 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
+                    A
+                </div>
+                <span class="font-bold text-lg">CEPI Arara Canindé</span>
+            </div>
+            <!-- Botão X - só aparece em mobile -->
+            <button id="closeBtn" class="lg:hidden p-2 hover:bg-gray-100 rounded">
+                ✕
+            </button>
+        </div>
+        
+        <nav class="flex-1 overflow-y-auto p-4">
+            <ul class="space-y-1">
+                <li><a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-blue-600 text-white">📊 Dashboard</a></li>
+                <li><a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100">📅 Agenda</a></li>
+                <li><a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100">📝 Diário</a></li>
+                <li><a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100">💬 Atendimento</a></li>
+                <li><a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100">🛒 Pedidos</a></li>
+                <li><a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100">📚 Biblioteca</a></li>
+                <li><a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100">👥 Alunos</a></li>
+                <li><a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100">🎓 Turmas</a></li>
+                <li><a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100">⚙️ Configurações</a></li>
+            </ul>
+        </nav>
+    </aside>
+    
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col min-h-screen lg:ml-0">
+        <!-- Header -->
+        <header class="sticky top-0 z-30 bg-white border-b border-gray-200">
+            <div class="flex items-center justify-between p-4">
+                <div class="flex items-center gap-4">
+                    <!-- Botão Hambúrguer - só aparece em mobile -->
+                    <button id="menuBtn" class="lg:hidden p-2 hover:bg-gray-100 rounded">
+                        ☰
+                    </button>
+                    <h1 class="text-xl font-bold">Teste Mobile</h1>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Content -->
+        <main class="flex-1 p-4">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-2xl font-bold mb-4">Teste de Responsividade Mobile</h2>
+                
+                <div class="space-y-4">
+                    <div class="p-4 bg-blue-50 rounded-lg">
+                        <p class="font-bold">Largura da Janela:</p>
+                        <p id="windowWidth" class="text-2xl">-</p>
+                    </div>
+                    
+                    <div class="p-4 bg-green-50 rounded-lg">
+                        <p class="font-bold">Status do Menu:</p>
+                        <p id="menuStatus" class="text-lg">-</p>
+                    </div>
+                    
+                    <div class="p-4 bg-yellow-50 rounded-lg">
+                        <p class="font-bold">Instruções:</p>
+                        <ul class="list-disc list-inside space-y-2 mt-2">
+                            <li><strong>Em Mobile:</strong> O menu deve estar escondido e o botão ☰ deve aparecer</li>
+                            <li><strong>Em Desktop:</strong> O menu deve estar sempre visível e o botão ☰ escondido</li>
+                            <li>Clique no botão ☰ para abrir o menu em mobile</li>
+                            <li>Clique no ✕ ou fora do menu para fechar</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script>
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        const menuBtn = document.getElementById('menuBtn');
+        const closeBtn = document.getElementById('closeBtn');
+        const windowWidth = document.getElementById('windowWidth');
+        const menuStatus = document.getElementById('menuStatus');
+        
+        function updateStatus() {
+            const width = window.innerWidth;
+            windowWidth.textContent = width + 'px';
+            
+            if (width < 1024) {
+                menuStatus.textContent = 'Mobile - Menu deve estar escondido';
+                menuStatus.className = 'text-lg text-green-600 font-bold';
+            } else {
+                menuStatus.textContent = 'Desktop - Menu deve estar visível';
+                menuStatus.className = 'text-lg text-blue-600 font-bold';
+            }
+        }
+        
+        function openMenu() {
+            sidebar.classList.remove('-translate-x-full');
+            sidebar.classList.add('translate-x-0');
+            overlay.classList.remove('hidden');
+        }
+        
+        function closeMenu() {
+            sidebar.classList.add('-translate-x-full');
+            sidebar.classList.remove('translate-x-0');
+            overlay.classList.add('hidden');
+        }
+        
+        menuBtn.addEventListener('click', openMenu);
+        closeBtn.addEventListener('click', closeMenu);
+        overlay.addEventListener('click', closeMenu);
+        
+        // Fechar menu ao clicar em links (em mobile)
+        sidebar.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth < 1024) {
+                    closeMenu();
+                }
+            });
+        });
+        
+        // Atualizar status
+        updateStatus();
+        window.addEventListener('resize', updateStatus);
+    </script>
+</body>
+</html>

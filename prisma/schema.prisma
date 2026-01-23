@@ -1,0 +1,161 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- HIERARQUIA ESTRATÉGICA ---
+model Association {
+  id          String   @id @default(uuid())
+  name        String
+  cnpj        String?  @unique
+  logoUrl     String?
+  schools     School[]
+  users       User[]
+  createdAt   DateTime @default(now())
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  passwordHash  String
+  name          String
+  role          String    // SUPER_ADMIN, DIRECTOR, COORDINATOR, TEACHER, SECRETARY, SUPPORT
+  associationId String?
+  association   Association? @relation(fields: [associationId], references: [id])
+  schoolId      String?
+  school        School?   @relation(fields: [schoolId], references: [id])
+  employeeProfile Employee?
+  createdAt     DateTime  @default(now())
+}
+
+model School {
+  id            String    @id @default(uuid())
+  associationId String?
+  association   Association? @relation(fields: [associationId], references: [id])
+  name          String
+  planType      String    @default("PRO")
+  students      Student[]
+  employees     Employee[]
+  inventory     InventoryItem[]
+  requisitions  MaterialRequisition[]
+  users         User[]
+  createdAt     DateTime  @default(now())
+}
+
+// --- PEDAGÓGICO E ALUNOS ---
+model Student {
+  id              String   @id @default(uuid())
+  name            String
+  birthDate       DateTime?
+  status          String   @default("ACTIVE")
+  healthData      Json?
+  academicData    Json?
+  attendance      Json?
+  performanceScore Float?   @default(0)
+  engagementLevel  String?  @default("MEDIUM")
+  riskOfChurn      Boolean  @default(false)
+  documents       Document[]
+  schoolId        String
+  school          School   @relation(fields: [schoolId], references: [id])
+  classId         String?
+}
+
+// --- FUNCIONÁRIOS ---
+model Employee {
+  id            String   @id @default(uuid())
+  userId        String?  @unique
+  user          User?    @relation(fields: [userId], references: [id])
+  name          String
+  role          String
+  email         String?
+  phone         String?
+  status        String   @default("ACTIVE")
+  rating        Float?   @default(5.0)
+  schoolId      String
+  school        School   @relation(fields: [schoolId], references: [id])
+  documents     Document[]
+  requisitions  MaterialRequisition[]
+  createdAt     DateTime @default(now())
+}
+
+// --- NOVO FLUXO DE MATERIAIS ---
+model InventoryItem {
+  id               String   @id @default(uuid())
+  name             String
+  category         String   
+  quantity         Int
+  minThreshold     Int      @default(10)
+  unit             String   @default("un")
+  sku              String?
+  lastPrice        Decimal? @default(0.0)
+  supplier         String?
+  lastUpdated      DateTime @default(now())
+  schoolId         String
+  school           School   @relation(fields: [schoolId], references: [id])
+  requisitionItems RequisitionItem[]
+}
+
+model MaterialRequisition {
+  id          String    @id @default(uuid())
+  requestDate DateTime  @default(now())
+  status      String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  requesterId String
+  requester   Employee  @relation(fields: [requesterId], references: [id])
+  schoolId    String
+  school      School    @relation(fields: [schoolId], references: [id])
+  reason      String?   
+  items       RequisitionItem[]
+  approvedBy  String?
+  approvedAt  DateTime?
+}
+
+model RequisitionItem {
+  id            String   @id @default(uuid())
+  quantity      Int
+  approvedQty   Int?
+  requisitionId String
+  requisition   MaterialRequisition @relation(fields: [requisitionId], references: [id])
+  itemId        String
+  item          InventoryItem @relation(fields: [itemId], references: [id])
+}
+
+// --- COMPRAS E DOCUMENTOS (LEGADO MANTIDO) ---
+model ProcurementOrder {
+  id          String   @id @default(uuid())
+  orderNumber String   @unique
+  status      String   @default("DRAFT") 
+  items       ProcurementItem[]
+  totalValue  Decimal  @default(0.0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ProcurementItem {
+  id        String   @id @default(uuid())
+  quantity  Int
+  unitPrice Decimal
+  subtotal  Decimal
+  orderId   String
+  order     ProcurementOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  itemName  String
+  itemSku   String?
+}
+
+model Document {
+  id          String   @id @default(uuid())
+  type        String   
+  url         String   
+  filename    String
+  fileSize    Int?     
+  mimeType    String?
+  studentId   String?
+  student     Student? @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  employeeId  String?
+  employee    Employee? @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
