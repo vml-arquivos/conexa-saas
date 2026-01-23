@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -13,11 +14,36 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 
 // Mock de dados para simular o estado inicial
+
+interface Turma {
+  id: string;
+  nome: string;
+  faixaEtaria: string;
+  turno: "Integral";
+  professor: string;
+  totalAlunos: number;
+  sala: string;
+  horario: string;
+  capacidadeMaxima: number;
+}
+
+const MOCK_TURMAS: Turma[] = [
+    { id: "1", nome: "Berçário I - Turma A", faixaEtaria: "0-1 ano", turno: "Integral", professor: "Maria Santos", totalAlunos: 8, sala: "Sala Bebês 1", horario: "07:00 - 18:00", capacidadeMaxima: 10 },
+    { id: "2", nome: "Berçário I - Turma B", faixaEtaria: "0-1 ano", turno: "Integral", professor: "Ana Paula Costa", totalAlunos: 7, sala: "Sala Bebês 2", horario: "07:00 - 18:00", capacidadeMaxima: 10 },
+    { id: "3", nome: "Berçário II - Turma A", faixaEtaria: "1-2 anos", turno: "Integral", professor: "Juliana Oliveira", totalAlunos: 10, sala: "Sala Descobertas", horario: "07:00 - 18:00", capacidadeMaxima: 12 },
+    { id: "4", nome: "Maternal I - Turma A", faixaEtaria: "2-3 anos", turno: "Integral", professor: "Carla Mendes", totalAlunos: 12, sala: "Sala Exploradores", horario: "07:00 - 18:00", capacidadeMaxima: 15 },
+    { id: "5", nome: "Maternal II - Turma A", faixaEtaria: "3-4 anos", turno: "Integral", professor: "Roberto Silva", totalAlunos: 15, sala: "Sala Aventureiros", horario: "07:00 - 18:00", capacidadeMaxima: 18 }
+];
+
 const MOCK_INVENTORY = [
   { id: 'inv1', name: 'Papel Sulfite A4', category: 'Pedagógico', quantity: 150, unit: 'resma', lastPrice: 25.90 },
-  { id: 'inv2', name: 'Caneta Azul', category: 'Escritório', quantity: 50, unit: 'un', lastPrice: 1.50 },
-  { id: 'inv3', name: 'Leite Integral', category: 'Alimentação', quantity: 30, unit: 'caixa', lastPrice: 48.00 },
+  { id: 'inv2', name: 'Caneta Azul', category: 'Pedagógico', quantity: 50, unit: 'un', lastPrice: 1.50 },
+  { id: 'inv3', name: 'Leite Integral (Diferenciado)', category: 'Alimentação', quantity: 30, unit: 'caixa', lastPrice: 48.00 },
   { id: 'inv4', name: 'Sabonete Líquido', category: 'Higiene', quantity: 10, unit: 'galão', lastPrice: 45.00 },
+  { id: 'inv5', name: 'Fralda G', category: 'Higiene', quantity: 200, unit: 'un', lastPrice: 1.20 },
+  { id: 'inv6', name: 'Fruta da Estação (Diferenciado)', category: 'Alimentação', quantity: 50, unit: 'un', lastPrice: 2.50 },
+  { id: 'inv7', name: 'Caderno Espiral', category: 'Pedagógico', quantity: 100, unit: 'un', lastPrice: 10.00 },
+  { id: 'inv8', name: 'Álcool em Gel', category: 'Higiene', quantity: 5, unit: 'litro', lastPrice: 15.00 },
 ];
 
 const MOCK_REQUISITIONS = [
@@ -25,8 +51,9 @@ const MOCK_REQUISITIONS = [
     id: 'req1',
     requestDate: new Date('2025-12-20'),
     status: 'PENDING',
-    requester: { name: 'Prof. Ana' },
-    school: { name: 'Berçário I - Turma A' },
+    requester: { name: 'Prof. Maria Santos' },
+    school: { name: MOCK_TURMAS.find(t => t.id === '1')?.nome || 'Turma Desconhecida' },
+    turmaId: '1',
     items: [
       { id: 'ri1', quantity: 5, item: MOCK_INVENTORY[0] },
       { id: 'ri2', quantity: 10, item: MOCK_INVENTORY[1] },
@@ -38,7 +65,8 @@ const MOCK_REQUISITIONS = [
     requestDate: new Date('2025-12-15'),
     status: 'APPROVED',
     requester: { name: 'Coord. João' },
-    school: { name: 'Maternal II - Turma B' },
+    school: { name: MOCK_TURMAS.find(t => t.id === '5')?.nome || 'Turma Desconhecida' },
+    turmaId: '5',
     items: [
       { id: 'ri3', quantity: 2, item: MOCK_INVENTORY[2], approvedQty: 2 },
     ],
@@ -48,7 +76,18 @@ const MOCK_REQUISITIONS = [
 
 // Componente de Nova Requisição
 const NovaRequisicao = ({ inventory, onRequisitionCreated }: { inventory: typeof MOCK_INVENTORY, onRequisitionCreated: () => void }) => {
+  const { user, isProfessor } = useAuth();
   const [selectedItem, setSelectedItem] = useState('');
+  const [turmaId, setTurmaId] = useState(isProfessor ? user?.turmaId || '' : '');
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const MOCK_CATEGORIES = ['Pedagógico', 'Higiene', 'Alimentação', 'Escritório'];
+
+  useEffect(() => {
+    if (isProfessor && user?.turmaId) {
+      setTurmaId(user.turmaId);
+    }
+  }, [isProfessor, user?.turmaId]);
+
   const [quantity, setQuantity] = useState(1);
   const [reason, setReason] = useState('');
   const [items, setItems] = useState<any[]>([]);
@@ -78,6 +117,10 @@ const NovaRequisicao = ({ inventory, onRequisitionCreated }: { inventory: typeof
   };
 
   const handleSubmit = async () => {
+    if (!turmaId) {
+      toast({ title: 'Erro', description: 'Selecione a turma para a qual a requisição se destina.', variant: 'destructive' });
+      return;
+    }
     if (items.length === 0) {
       toast({ title: 'Erro', description: 'Adicione pelo menos um item à requisição.', variant: 'destructive' });
       return;
@@ -88,8 +131,9 @@ const NovaRequisicao = ({ inventory, onRequisitionCreated }: { inventory: typeof
       // Simulação de chamada de API POST /api/requisitions
       // Na implementação real, usaria a rota criada no backend
       const payload = {
-        requesterId: 'mock-requester-id', // ID do usuário logado
+        requesterId: user?.id || 'mock-requester-id', // ID do usuário logado
         schoolId: 'mock-school-id', // ID da escola do usuário logado
+        turmaId, // NOVO: ID da turma
         reason,
         items: items.map(i => ({ itemId: i.itemId, quantity: i.quantity })),
       };
@@ -112,6 +156,10 @@ const NovaRequisicao = ({ inventory, onRequisitionCreated }: { inventory: typeof
   };
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+  
+  const filteredInventory = inventory.filter(item => 
+    categoryFilter ? item.category === categoryFilter : true
+  );
 
   return (
     <Card>
@@ -122,6 +170,40 @@ const NovaRequisicao = ({ inventory, onRequisitionCreated }: { inventory: typeof
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="turma">Turma Solicitante *</Label>
+            <Select value={turmaId} onValueChange={setTurmaId} disabled={isProfessor}>
+              <SelectTrigger id="turma">
+                <SelectValue placeholder="Selecione a Turma" />
+              </SelectTrigger>
+              <SelectContent>
+                {MOCK_TURMAS.filter(t => !isProfessor || t.id === user?.turmaId).map(turma => (
+                  <SelectItem key={turma.id} value={turma.id}>
+                    {turma.nome} - Prof. {turma.professor}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="category">Filtrar por Categoria</Label>
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger id="category">
+                <SelectValue placeholder="Todas as Categorias" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Todas as Categorias</SelectItem>
+                {MOCK_CATEGORIES.map(category => (
+                  <SelectItem key={category} value={category}>
+                    {category}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
             <Label htmlFor="item">Item do Estoque</Label>
@@ -130,7 +212,7 @@ const NovaRequisicao = ({ inventory, onRequisitionCreated }: { inventory: typeof
                 <SelectValue placeholder="Selecione um item" />
               </SelectTrigger>
               <SelectContent>
-                {inventory.map(item => (
+                {filteredInventory.map(item => (
                   <SelectItem key={item.id} value={item.id}>
                     {item.name} ({item.quantity} {item.unit} em estoque)
                   </SelectItem>
@@ -192,7 +274,7 @@ const NovaRequisicao = ({ inventory, onRequisitionCreated }: { inventory: typeof
                 ))}
               </TableBody>
             </Table>
-            <Button onClick={handleSubmit} className="w-full" disabled={isSubmitting}>
+            <Button onClick={handleSubmit} className="w-full" disabled={isSubmitting || !turmaId}>
               {isSubmitting ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : (
@@ -208,7 +290,8 @@ const NovaRequisicao = ({ inventory, onRequisitionCreated }: { inventory: typeof
 };
 
 // Componente de Lista de Requisições
-const ListaRequisicoes = ({ requisitions, isApprovalView = false, onStatusChange }: { requisitions: typeof MOCK_REQUISITIONS, isApprovalView?: boolean, onStatusChange: (id: string, status: 'APPROVED' | 'REJECTED') => void }) => {
+const ListaRequisicoes = ({ requisitions, isApprovalView = false, onStatusChange }: { requisitions: (typeof MOCK_REQUISITIONS)[], isApprovalView?: boolean, onStatusChange: (id: string, status: 'APPROVED' | 'REJECTED') => void }) => {
+  const { isCoordenador, isDiretor } = useAuth();
   const { toast } = useToast();
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
@@ -329,7 +412,7 @@ const ListaRequisicoes = ({ requisitions, isApprovalView = false, onStatusChange
                     </DialogContent>
                   </Dialog>
 
-                  {isApprovalView && req.status === 'PENDING' && (
+                  {isApprovalView && req.status === 'PENDING' && (isCoordenador || isDiretor) && (
                     <>
                       <Button
                         variant="default"
@@ -364,9 +447,11 @@ const ListaRequisicoes = ({ requisitions, isApprovalView = false, onStatusChange
 
 // Componente Principal
 const Requisicoes = () => {
+  const { user, isProfessor, isCoordenador, isDiretor } = useAuth();
+  const [turmaFiltrada, setTurmaFiltrada] = useState(isProfessor ? user?.turmaId || '' : '');
   const [requisitions, setRequisitions] = useState(MOCK_REQUISITIONS);
   const [inventory, setInventory] = useState(MOCK_INVENTORY);
-  const [activeTab, setActiveTab] = useState('nova');
+  const [activeTab, setActiveTab] = useState(isProfessor ? 'minhas' : 'aprovacao');
 
   // Simulação de atualização de dados após uma ação
   const handleRequisitionCreated = () => {
@@ -375,13 +460,14 @@ const Requisicoes = () => {
       id: `req${requisitions.length + 1}`,
       requestDate: new Date(),
       status: 'PENDING',
-      requester: { name: 'Prof. Novo' },
-      school: { name: 'Berçário I - Turma A' },
+      requester: { name: user?.name || 'Usuário Teste' },
+      school: { name: MOCK_TURMAS.find(t => t.id === user?.turmaId)?.nome || 'Turma Desconhecida' },
+      turmaId: user?.turmaId || '1',
       items: [{ id: 'riX', quantity: 1, item: inventory[0] }],
       reason: 'Teste de nova requisição.',
     };
     setRequisitions([newReq, ...requisitions]);
-    setActiveTab('aprovacao'); // Mudar para a aba de aprovação para ver a nova
+    setActiveTab('minhas'); // Mudar para a aba de minhas requisições
   };
 
   const handleStatusChange = (id: string, status: 'APPROVED' | 'REJECTED') => {
@@ -402,8 +488,13 @@ const Requisicoes = () => {
     }
   };
 
-  const pendingRequisitions = useMemo(() => requisitions.filter(req => req.status === 'PENDING'), [requisitions]);
-  const myRequisitions = useMemo(() => requisitions.filter(req => req.requester.name === 'Prof. Ana' || req.requester.name === 'Prof. Novo'), [requisitions]); // Mock para "Minhas Requisições"
+  const filteredRequisitions = useMemo(() => {
+    if (!turmaFiltrada) return requisitions;
+    return requisitions.filter(req => req.turmaId === turmaFiltrada);
+  }, [requisitions, turmaFiltrada]);
+
+  const pendingRequisitions = useMemo(() => filteredRequisitions.filter(req => req.status === 'PENDING'), [filteredRequisitions]);
+  const myRequisitions = useMemo(() => filteredRequisitions.filter(req => req.requester.name === user?.name), [filteredRequisitions]); // Filtra pelas requisições do usuário logado
 
   return (
     <div className="space-y-6 p-6">
@@ -415,28 +506,71 @@ const Requisicoes = () => {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList>
-          <TabsTrigger value="nova">
-            <Plus className="w-4 h-4 mr-2" /> Nova Requisição
-          </TabsTrigger>
-          <TabsTrigger value="minhas">
-            <Package className="w-4 h-4 mr-2" /> Minhas Requisições
-          </TabsTrigger>
-          <TabsTrigger value="aprovacao">
-            <ListChecks className="w-4 h-4 mr-2" /> Aprovação ({pendingRequisitions.length})
-          </TabsTrigger>
+          {isProfessor && (
+            <TabsTrigger value="nova">
+              <Plus className="w-4 h-4 mr-2" /> Nova Requisição
+            </TabsTrigger>
+          )}
+          {isProfessor && (
+            <TabsTrigger value="minhas">
+              <Package className="w-4 h-4 mr-2" /> Minhas Requisições
+            </TabsTrigger>
+          )}
+          {(isCoordenador || isDiretor) && (
+            <TabsTrigger value="aprovacao">
+              <ListChecks className="w-4 h-4 mr-2" /> Aprovação ({pendingRequisitions.length})
+            </TabsTrigger>
+          )}
         </TabsList>
 
-        <TabsContent value="nova" className="mt-4">
-          <NovaRequisicao inventory={inventory} onRequisitionCreated={handleRequisitionCreated} />
-        </TabsContent>
+        {isProfessor && (
+          <TabsContent value="nova" className="mt-4">
+            <NovaRequisicao inventory={inventory} onRequisitionCreated={handleRequisitionCreated} />
+          </TabsContent>
+        )}
 
-        <TabsContent value="minhas" className="mt-4">
-          <ListaRequisicoes requisitions={myRequisitions} onStatusChange={handleStatusChange} />
-        </TabsContent>
+        {isProfessor && (
+          <TabsContent value="minhas" className="mt-4">
+            <div className="mb-4">
+              <Label htmlFor="filter-turma">Filtrar por Turma</Label>
+              <Select value={turmaFiltrada} onValueChange={setTurmaFiltrada} disabled={isProfessor}>
+                <SelectTrigger id="filter-turma" className="w-[200px]">
+                  <SelectValue placeholder="Minha Turma" />
+                </SelectTrigger>
+                <SelectContent>
+                  {MOCK_TURMAS.filter(t => t.id === user?.turmaId).map(turma => (
+                    <SelectItem key={turma.id} value={turma.id}>
+                      {turma.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <ListaRequisicoes requisitions={myRequisitions} onStatusChange={handleStatusChange} />
+          </TabsContent>
+        )}
 
-        <TabsContent value="aprovacao" className="mt-4">
-          <ListaRequisicoes requisitions={pendingRequisitions} isApprovalView={true} onStatusChange={handleStatusChange} />
-        </TabsContent>
+        {(isCoordenador || isDiretor) && (
+          <TabsContent value="aprovacao" className="mt-4">
+            <div className="mb-4">
+              <Label htmlFor="filter-turma-aprovacao">Filtrar por Turma</Label>
+              <Select value={turmaFiltrada} onValueChange={setTurmaFiltrada}>
+                <SelectTrigger id="filter-turma-aprovacao" className="w-[200px]">
+                  <SelectValue placeholder="Todas as Turmas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todas as Turmas</SelectItem>
+                  {MOCK_TURMAS.map(turma => (
+                    <SelectItem key={turma.id} value={turma.id}>
+                      {turma.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <ListaRequisicoes requisitions={pendingRequisitions} isApprovalView={true} onStatusChange={handleStatusChange} />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

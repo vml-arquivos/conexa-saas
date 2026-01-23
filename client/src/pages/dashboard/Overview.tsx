@@ -9,8 +9,10 @@ import {
   ArrowRight
 } from "lucide-react";
 import { Link } from "wouter";
+import { MockLoginSelector, useAuth } from "@/context/AuthContext";
 
 export default function Overview() {
+  const { user } = useAuth();
   const stats = [
     { label: "Planejamentos Ativos", value: "12", icon: BookOpen, color: "text-blue-500", bg: "bg-blue-500/10" },
     { label: "Aprovados (Mês)", value: "45", icon: CheckCircle2, color: "text-green-500", bg: "bg-green-500/10" },
@@ -26,10 +28,11 @@ export default function Overview() {
 
   return (
     <div className="space-y-8">
+      <MockLoginSelector />
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-display font-bold text-foreground">Visão Geral</h1>
-          <p className="text-muted-foreground">Bem-vindo de volta, Ana. Aqui está o resumo de hoje.</p>
+	          <h1 className="text-3xl font-display font-bold text-foreground">Visão Geral</h1>
+	          <p className="text-muted-foreground">Bem-vindo de volta, {user?.name || 'Usuário'}. Aqui está o resumo de hoje.</p>
         </div>
         <Link href="/dashboard/planejamentos/novo">
           <Button className="gap-2 shadow-lg shadow-primary/20">

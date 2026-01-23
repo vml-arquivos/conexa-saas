@@ -16,7 +16,7 @@ interface Template {
   icone: any;
 }
 
-const templatesEducacaoInfantil: Template[] = [
+export const templatesEducacaoInfantil: Template[] = [
   {
     id: "1",
     titulo: "Planejamento Semanal - Berçário I",

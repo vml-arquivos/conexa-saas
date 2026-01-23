@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useAuth } from '@/context/AuthContext';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,8 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, FileText, Download, Trash2, Upload, FolderOpen, BookOpen, ClipboardList, GraduationCap } from "lucide-react";
+import { Plus, FileText, Download, Trash2, Upload, FolderOpen, BookOpen, ClipboardList, GraduationCap, LayoutTemplate } from "lucide-react";
 import { toast } from "sonner";
+import { templatesEducacaoInfantil } from "./TemplatesCEFR";
 
 interface Documento {
   id: string;
@@ -20,25 +22,36 @@ interface Documento {
 }
 
 export default function BibliotecaSala() {
-  const [turmaSelecionada, setTurmaSelecionada] = useState<string>("bercario1a");
+  const { user, isProfessor, isCoordenador, isDiretor } = useAuth();
+  const initialTurma = isProfessor ? user?.turmaId || "1" : "1"; // Assume '1' como default se não for professor e não tiver turma
+  const [turmaSelecionada, setTurmaSelecionada] = useState<string>(initialTurma);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [tipoDocumento, setTipoDocumento] = useState<string>("");
   const [nomeDocumento, setNomeDocumento] = useState<string>("");
 
   const turmas = [
-    { id: "bercario1a", nome: "Berçário I - Turma A", faixa: "0-1 ano" },
-    { id: "bercario1b", nome: "Berçário I - Turma B", faixa: "0-1 ano" },
-    { id: "bercario2a", nome: "Berçário II - Turma A", faixa: "1-2 anos" },
-    { id: "maternal1a", nome: "Maternal I - Turma A", faixa: "2-3 anos" },
-    { id: "maternal2a", nome: "Maternal II - Turma A", faixa: "3-4 anos" }
+    { id: "1", nome: "Berçário I - Turma A", faixa: "0-1 ano" },
+    { id: "2", nome: "Berçário I - Turma B", faixa: "0-1 ano" },
+    { id: "3", nome: "Berçário II - Turma A", faixa: "1-2 anos" },
+    { id: "4", nome: "Maternal I - Turma A", faixa: "2-3 anos" },
+    { id: "5", nome: "Maternal II - Turma A", faixa: "3-4 anos" }
   ];
 
   const [documentos, setDocumentos] = useState<Documento[]>([
+    // Mock de um planejamento criado a partir de um template
+    {
+      id: "5",
+      nome: "Planejamento Semanal - Maternal II (Template Aplicado)",
+      tipo: "planejamento",
+      turma: "5",
+      dataUpload: "2026-01-23",
+      tamanho: "900 KB"
+    },
     {
       id: "1",
       nome: "Currículo em Movimento - Educação Infantil 0-3 anos",
       tipo: "curriculo",
-      turma: "bercario1a",
+      turma: "1",
       dataUpload: "2025-12-10",
       tamanho: "2.5 MB"
     },
@@ -46,7 +59,7 @@ export default function BibliotecaSala() {
       id: "2",
       nome: "Planejamento Semanal - Exploração Sensorial",
       tipo: "planejamento",
-      turma: "bercario1a",
+      turma: "1",
       dataUpload: "2025-12-15",
       tamanho: "850 KB"
     },
@@ -54,7 +67,7 @@ export default function BibliotecaSala() {
       id: "3",
       nome: "Atividade - Caixa Sensorial de Texturas",
       tipo: "atividade",
-      turma: "bercario1a",
+      turma: "1",
       dataUpload: "2025-12-16",
       tamanho: "1.2 MB"
     },
@@ -62,13 +75,47 @@ export default function BibliotecaSala() {
       id: "4",
       nome: "Relatório de Desenvolvimento - Dezembro 2025",
       tipo: "documento",
-      turma: "bercario1a",
+      turma: "1",
       dataUpload: "2025-12-17",
       tamanho: "3.1 MB"
     }
   ]);
 
-  const documentosFiltrados = documentos.filter(doc => doc.turma === turmaSelecionada);
+  const documentosFiltrados = useMemo(() => {
+    if (isProfessor && user?.turmaId) {
+      return documentos.filter(doc => doc.turma === user.turmaId);
+    }
+    return documentos.filter(doc => doc.turma === turmaSelecionada);
+  }, [documentos, turmaSelecionada, isProfessor, user?.turmaId]);
+  
+  const [templateSelecionado, setTemplateSelecionado] = useState<string>("");
+  const [nomePlanejamento, setNomePlanejamento] = useState<string>("");
+
+	  const handleAplicarTemplate = () => {
+	    const template = templatesEducacaoInfantil.find(t => t.id === templateSelecionado);
+	    if (!template || !nomePlanejamento) {
+	      toast.error("Selecione um template e insira um nome para o planejamento.");
+	      return;
+	    }
+	    if (isProfessor && turmaSelecionada !== user?.turmaId) {
+	      toast.error("Você só pode aplicar templates para a sua turma.");
+	      return;
+	    }
+
+	    const novoPlanejamento: Documento = {
+	      id: Date.now().toString(),
+	      nome: nomePlanejamento,
+	      tipo: "planejamento",
+	      turma: isProfessor ? user!.turmaId : turmaSelecionada,
+      dataUpload: new Date().toISOString().split('T')[0],
+      tamanho: "900 KB" // Simulação de tamanho
+    };
+
+    setDocumentos([...documentos, novoPlanejamento]);
+    setTemplateSelecionado("");
+    setNomePlanejamento("");
+    toast.success(`Planejamento "${nomePlanejamento}" criado a partir do template "${template.titulo}"!`);
+  };
 
   const turmaAtual = turmas.find(t => t.id === turmaSelecionada);
 
@@ -102,17 +149,21 @@ export default function BibliotecaSala() {
     }
   };
 
-  const handleAdicionarDocumento = () => {
-    if (!nomeDocumento || !tipoDocumento) {
-      toast.error("Preencha todos os campos");
-      return;
-    }
+	  const handleAdicionarDocumento = () => {
+	    if (!nomeDocumento || !tipoDocumento) {
+	      toast.error("Preencha todos os campos");
+	      return;
+	    }
+	    if (isProfessor && turmaSelecionada !== user?.turmaId) {
+	      toast.error("Você só pode adicionar documentos para a sua turma.");
+	      return;
+	    }
 
     const novoDoc: Documento = {
       id: Date.now().toString(),
       nome: nomeDocumento,
-      tipo: tipoDocumento as any,
-      turma: turmaSelecionada,
+	      tipo: tipoDocumento as any,
+	      turma: isProfessor ? user!.turmaId : turmaSelecionada,
       dataUpload: new Date().toISOString().split('T')[0],
       tamanho: "1.5 MB"
     };
@@ -138,28 +189,29 @@ export default function BibliotecaSala() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Biblioteca da Sala</h1>
+          {isProfessor && <p className="text-lg font-semibold text-primary">Turma: {turmaAtual?.nome}</p>}
           <p className="text-muted-foreground">
             Organize currículos, planejamentos e documentos por turma
           </p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Adicionar Arquivo
-            </Button>
-          </DialogTrigger>
+	          <DialogTrigger asChild>
+	            <Button disabled={isProfessor && !user?.turmaId}>
+	              <Plus className="mr-2 h-4 w-4" />
+	              Adicionar Arquivo
+	            </Button>
+	          </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Adicionar Documento</DialogTitle>
-              <DialogDescription>
-                Adicione currículos, planejamentos ou documentos para {turmaAtual?.nome}
-              </DialogDescription>
+	              <DialogDescription>
+	                Adicione currículos, planejamentos ou documentos para {isProfessor ? turmaAtual?.nome : turmaAtual?.nome || 'a turma selecionada'}
+	              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>Tipo de Documento</Label>
-                <Select value={tipoDocumento} onValueChange={setTipoDocumento}>
+	              <div className="space-y-2">
+	                <Label>Tipo de Documento</Label>
+	                <Select value={tipoDocumento} onValueChange={setTipoDocumento} disabled={isProfessor && turmaSelecionada !== user?.turmaId}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o tipo" />
                   </SelectTrigger>
@@ -192,60 +244,112 @@ export default function BibliotecaSala() {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label>Nome do Documento</Label>
-                <Input
-                  placeholder="Ex: Currículo em Movimento - Berçário"
-                  value={nomeDocumento}
-                  onChange={(e) => setNomeDocumento(e.target.value)}
-                />
-              </div>
+	              <div className="space-y-2">
+	                <Label>Nome do Documento</Label>
+	                <Input
+	                  placeholder="Ex: Currículo em Movimento - Berçário"
+	                  value={nomeDocumento}
+	                  onChange={(e) => setNomeDocumento(e.target.value)}
+	                  disabled={isProfessor && turmaSelecionada !== user?.turmaId}
+	                />
+	              </div>
 
-              <div className="border-2 border-dashed rounded-lg p-6 text-center">
-                <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground mb-2">
-                  Arraste o arquivo ou clique para selecionar
-                </p>
-                <Button variant="outline" size="sm">
-                  Selecionar Arquivo
-                </Button>
-              </div>
+	              <div className="border-2 border-dashed rounded-lg p-6 text-center">
+	                <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+	                <p className="text-sm text-muted-foreground mb-2">
+	                  Arraste o arquivo ou clique para selecionar
+	                </p>
+	                <Button variant="outline" size="sm" disabled={isProfessor && turmaSelecionada !== user?.turmaId}>
+	                  Selecionar Arquivo
+	                </Button>
+	              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setDialogOpen(false)}>
                 Cancelar
               </Button>
-              <Button onClick={handleAdicionarDocumento}>
-                Adicionar
-              </Button>
+	              <Button onClick={handleAdicionarDocumento} disabled={isProfessor && turmaSelecionada !== user?.turmaId}>
+	                Adicionar
+	              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
 
-      {/* Seleção de Turma */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Selecione a Turma</CardTitle>
-          <CardDescription>
-            Visualize e gerencie os documentos de cada turma
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Select value={turmaSelecionada} onValueChange={setTurmaSelecionada}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {turmas.map((turma) => (
-                <SelectItem key={turma.id} value={turma.id}>
-                  {turma.nome} - {turma.faixa}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </CardContent>
-      </Card>
+	      {/* Seleção de Turma */}
+	      {(!isProfessor || isCoordenador || isDiretor) && (
+	        <Card>
+	          <CardHeader>
+	            <CardTitle>Selecione a Turma</CardTitle>
+	            <CardDescription>
+	              Visualize e gerencie os documentos de cada turma
+	            </CardDescription>
+	          </CardHeader>
+	          <CardContent>
+	            <Select value={turmaSelecionada} onValueChange={setTurmaSelecionada} disabled={isProfessor}>
+	              <SelectTrigger>
+	                <SelectValue />
+	              </SelectTrigger>
+	              <SelectContent>
+	                {turmas.filter(t => !isProfessor || t.id === user?.turmaId).map((turma) => (
+	                  <SelectItem key={turma.id} value={turma.id}>
+	                    {turma.nome} - {turma.faixa}
+	                  </SelectItem>
+	                ))}
+	              </SelectContent>
+	            </Select>
+	          </CardContent>
+	        </Card>
+	      )}
+	
+	        {/* Aba de Planejamento com Templates */}
+	        <Card>
+	          <CardHeader>
+	            <CardTitle className="flex items-center gap-2">
+	              <LayoutTemplate className="h-5 w-5" />
+	              Planejamento com Templates
+	            </CardTitle>
+	            <CardDescription>
+	              Selecione um template pronto e aplique-o como um novo planejamento para a turma {turmaAtual?.nome}.
+	            </CardDescription>
+	          </CardHeader>
+	          <CardContent className="space-y-4">
+	            <div className="space-y-2">
+	              <Label htmlFor="template">Template de Planejamento</Label>
+	              <Select value={templateSelecionado} onValueChange={setTemplateSelecionado}>
+	                <SelectTrigger id="template">
+	                  <SelectValue placeholder="Selecione um template" />
+	                </SelectTrigger>
+	                <SelectContent>
+	                  {templatesEducacaoInfantil.map(template => (
+	                    <SelectItem key={template.id} value={template.id}>
+	                      {template.titulo} ({template.faixaEtaria})
+	                    </SelectItem>
+	                  ))}
+	                </SelectContent>
+	              </Select>
+	            </div>
+	            <div className="space-y-2">
+	              <Label htmlFor="nomePlanejamento">Nome do Novo Planejamento</Label>
+	              <Input
+	                id="nomePlanejamento"
+	                placeholder="Ex: Planejamento Semanal - 2ª Semana de Janeiro"
+	                value={nomePlanejamento}
+	                onChange={(e) => setNomePlanejamento(e.target.value)}
+	              />
+	            </div>
+	            <Button onClick={handleAplicarTemplate} disabled={!templateSelecionado || !nomePlanejamento || (isProfessor && turmaSelecionada !== user?.turmaId)} className="w-full">
+	              <ClipboardList className="mr-2 h-4 w-4" />
+	              Aplicar Template e Criar Planejamento
+	            </Button>
+	            {templateSelecionado && (
+	              <div className="text-sm text-muted-foreground p-3 border rounded-md">
+	                <p className="font-semibold">Detalhes do Template:</p>
+	                <p>{templatesEducacaoInfantil.find(t => t.id === templateSelecionado)?.descricao}</p>
+	              </div>
+	            )}
+	          </CardContent>
+	        </Card>
 
       {/* Estatísticas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -301,7 +405,7 @@ export default function BibliotecaSala() {
       {/* Lista de Documentos */}
       <Card>
         <CardHeader>
-          <CardTitle>Documentos de {turmaAtual?.nome}</CardTitle>
+	          <CardTitle>Documentos e Planejamentos de {turmaAtual?.nome}</CardTitle>
           <CardDescription>
             {documentosFiltrados.length} {documentosFiltrados.length === 1 ? "documento" : "documentos"}
           </CardDescription>
